@@ -90,6 +90,7 @@ function saveCanvas() {
             console.error(error);
         } else {
             console.log('OK', res.filePath);
+            clearCanvas();
         }
     })
 }
@@ -217,7 +218,6 @@ window.onload = function () {
                 saveCounter++;
                 if (saveCounter > SAVE_TOUCHES_REQUIRE) {
                     saveCanvas();
-                    clearCanvas();
                 }
             }
         }
