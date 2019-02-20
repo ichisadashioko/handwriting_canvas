@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Canvas</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="cordova.js"></script>
+    <script src="jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+    <script src="main.js"></script>
+</head>
+
+<body>
+    <button type="button" class="btn btn-primary" id="clear" onclick="clearCanvas()" hidden>CLEAR</button>
+    <button type="button" class="btn btn-success" id="save" onclick="saveCanvas()" hidden>SAVE</button>
+    <canvas id="canvas"></canvas>
+    <div id="output" class='container' hidden>
+        <div class="row">
+            <p class="col-sm-6" id="touchstart"></p>
+            <p class="col-sm-6" id="touchmove"></p>
+        </div>
+    </div>
+</body>
+
+</html>

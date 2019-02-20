@@ -1,0 +1,9 @@
+# cordova
+platforms/
+plugins/
+hooks/
+
+# nodejs
+node_modules/
+package-lock.json
+.npmignore
