@@ -1,27 +1,30 @@
-const MIN_RADIUS = 8;
-const MAX_RADIUS = 12;
+const MIN_RADIUS = 4;
+const MAX_RADIUS = 5;
 const MIN_DISTANCE = 4; //MIN_RADIUS / 4.0;
 const MAX_DISTANCE = 96;
 
-// var radius_pixel_ratio = 0;
+const PAD_WIDTH = 320;
+const PAD_HEIGHT = 320;
+
 var lastClear = Date.now();
 var lastSave = Date.now();
 
 var clearCounter = 0;
 const CLEAR_TOUCHES_REQUIRE = 16;
-var clearTime = 500;
+var clearTime = 300;
 var CLEAR_GESTURE = 3;
 
 var saveCounter = 0;
 const SAVE_TOUCHES_REQUIRE = 16;
-var saveTime = 1000;
+var saveTime = 500;
 var SAVE_GESTURE = 2;
 
-var brushStyle = 'rgba(127,127,127,0.75)';
+var brushStyle = 'rgb(255,255,255)';
 var bgStyle = 'rgb(0,0,0)';
 
 var canvas;
 var ctx;
+var scale = 1;
 var penDown = false;
 var mouse = {
     x: 0,
@@ -29,48 +32,52 @@ var mouse = {
     radius: MIN_RADIUS
 }
 
-function getViewPort() {
-    var viewPortWidth;
-    var viewPortHeight;
-
-    // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
-    if (typeof (window.innerWidth) != 'undefined') {
-        viewPortWidth = window.innerWidth;
-        viewPortHeight = window.innerHeight;
-    }
-    // IE6 in standards compliant mode (i.e. with a valid doctype as the first line the document)
-    else if (typeof (document.documentElement) != 'undefined' && typeof (document.documentElement.clientWidth) != 'undefined' && typeof (document.documentElement.clientHeight) != 'undefined') {
-        viewPortWidth = document.documentElement.clientWidth;
-        viewPortHeight = document.documentElement.clientHeight;
-    }
-    // older versions of IE
-    else {
-        viewPortWidth = document.getElementsByTagName('body')[0].clientWidth;
-        viewPortHeight = document.getElementsByTagName('body')[0].clientHeight;
-    }
-    return [viewPortWidth, viewPortHeight];
+var canvasOffset = {
+    x: 0,
+    y: 0,
 }
 
 function doResize() {
-    var canvas = document.getElementById('canvas');
 
-    var width, height;
+    var c = $('#canvas')
 
-    [width, height] = getViewPort();
+    var new_scale = Math.min(
+        window.innerWidth / PAD_WIDTH,
+        window.innerHeight / PAD_HEIGHT
+    );
 
-    // console.log(`width = ${width}, height = ${height}`)
+    scale = new_scale
 
-    canvas.width = width;
-    canvas.height = height;
+    c.css('transform', ('scale(' + new_scale + ')'))
+    c.css('left', '0')
+    canvasOffset.x = 0;
+
+    var ui_container = $('#ui-container')
+
+    var ui_width = window.innerWidth - new_scale * PAD_WIDTH;
+
+    if (ui_width == 0) {
+        ui_width = window.innerWidth;
+    }
+
+    var ui_height = window.innerHeight - new_scale * PAD_HEIGHT;
+
+    if (ui_height == 0) {
+        ui_height = window.innerHeight;
+        canvasOffset.x = ui_width;
+        c.css('left', ui_width)
+        ui_container.css('left', '0')
+        ui_container.css('right', '')
+    }
+
+    ui_container.css('width', ('' + ui_width + 'px'))
+    ui_container.css('height', ('' + ui_height + 'px'))
 }
 
 function clearCanvas() {
     penDown = false;
     clearCounter = 0;
     lastClear = Date.now();
-
-    var canvas = document.getElementById('canvas');
-    var ctx = canvas.getContext('2d');
 
     var width = canvas.width;
     var height = canvas.height;
@@ -83,22 +90,56 @@ function saveCanvas() {
     penDown = false;
     saveCounter = 0;
     lastSave = Date.now();
-    // var dataURL = canvas.toDataURL('image/png');
-    // console.log(dataURL)
-    navigator.screenshot.save(function (error, res) {
-        if (error) {
-            console.error(error);
+
+    var imageData = canvas.toDataURL().replace(/data:image\/png;base64,/, '');
+
+    clearCanvas();
+
+    var pms = cordova.plugins.permissions;
+
+    pms.checkPermission(pms.WRITE_EXTERNAL_STORAGE, function (status) {
+        if (status.hasPermission) {
+            // console.log("Yes")
+
+            cordova.exec(function (msg) {
+                    console.log(msg)
+                },
+                function (err) {
+                    console.log(err)
+                },
+                "Canvas2ImagePlugin",
+                "saveImageDataToLibrary",
+                [imageData]
+            );
         } else {
-            console.log('OK', res.filePath);
-            clearCanvas();
+            console.log("Saved failed. Lack permission: WRITE_EXTERNAL_STORAGE")
+            pms.requestPermissions(pms.WRITE_EXTERNAL_STORAGE, function (status) {
+                if (status.hasPermission) {
+                    console.log("Yes")
+
+                    cordova.exec(function (msg) {
+                            console.log(msg)
+                        },
+                        function (err) {
+                            console.log(err)
+                        },
+                        "Canvas2ImagePlugin",
+                        "saveImageDataToLibrary",
+                        [imageData]
+                    );
+                } else {
+                    console.log("Saved failed. Lack permission: WRITE_EXTERNAL_STORAGE")
+                }
+            })
+
         }
     })
 }
 
 function touchstart(evt) {
     penDown = true;
-    mouse.x = evt.x;
-    mouse.y = evt.y;
+    mouse.x = (evt.x - canvasOffset.x) / scale;
+    mouse.y = (evt.y - canvasOffset.y) / scale;
 
 }
 
@@ -110,34 +151,14 @@ function touchmove(evt) {
     var y = mouse.y;
     var r = mouse.radius;
 
-    var dX = evt.x - x;
-    var dY = evt.y - y;
+    var dX = (evt.x - canvasOffset.x) / scale - x;
+    var dY = (evt.y - canvasOffset.y) / scale - y;
 
     var distance = Math.sqrt(dX ** 2 + dY ** 2)
-
-    if (distance > MAX_DISTANCE) {
-        // ctx.fillStyle = 'rgb(200, 0, 0)'
-        // ctx.beginPath()
-        // ctx.arc(evt.x, evt.y, 16, 0, Math.PI * 2, false);
-        // ctx.fill();
-
-        // ctx.beginPath()
-        // ctx.arc(x, y, 16, 0, Math.PI * 2, false);
-        // ctx.fill();
-        return;
-    }
 
     var step = distance / MIN_DISTANCE;
     var deltaX = dX / step;
     var deltaY = dY / step;
-
-    // console.log(`distance ${distance}`)
-
-    // var radiusStep = 1;
-    // var dR = (MAX_RADIUS / (distance / 0.1)) - r;
-    // var deltaRadius = dR / radiusStep;
-
-    // console.log(`dX=${dX}, dY=${dY}, distance=${distance}, step=${step}`)
 
     for (let i = 0; i < step; i++) {
         ctx.fillStyle = brushStyle;
@@ -145,14 +166,8 @@ function touchmove(evt) {
         ctx.arc(x, y, r, 0, Math.PI * 2, false);
         ctx.fill();
 
-        // console.log(`draw circle at (${x}, ${y})`)
-
         x += deltaX;
         y += deltaY;
-        // r += deltaRadius;
-
-        // if (r < MIN_RADIUS) r = MIN_RADIUS;
-        // if (r > MAX_RADIUS) r = MAX_RADIUS;
     }
 
     mouse.x = x;
@@ -167,11 +182,12 @@ function touchend(evt) {
 
 
 window.onload = function () {
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d');
+
     doResize();
     clearCanvas();
 
-    canvas = document.getElementById('canvas');
-    ctx = canvas.getContext('2d');
 
     canvas.addEventListener('mousedown', touchstart, false)
     canvas.addEventListener('touchstart', (evt) => {
@@ -181,7 +197,6 @@ window.onload = function () {
         $('#touchstart').text(`touchstart: ${touches.length}`)
 
         for (let i = 0; i < touches.length; i++) {
-            // console.log(`touchstart: ${i}`)
             var _evt = {
                 x: touches[i].pageX,
                 y: touches[i].pageY
@@ -212,17 +227,16 @@ window.onload = function () {
                     clearCanvas();
                 }
             }
-        } else if (touches.length == SAVE_GESTURE) {
-
-            if ((now - lastSave) > saveTime) {
-                saveCounter++;
-                if (saveCounter > SAVE_TOUCHES_REQUIRE) {
-                    saveCanvas();
-                }
-            }
         }
+        // else if (touches.length == SAVE_GESTURE) {
 
-        $('#touchmove').text(`touchmove: ${touches.length} | clearCounter: ${clearCounter} | saveCounter: ${saveCounter}`)
+        //     if ((now - lastSave) > saveTime) {
+        //         saveCounter++;
+        //         if (saveCounter > SAVE_TOUCHES_REQUIRE) {
+        //             saveCanvas();
+        //         }
+        //     }
+        // }
 
     }, false)
 
@@ -231,13 +245,13 @@ window.onload = function () {
     })
 
     canvas.addEventListener('mouseup', touchend, false)
+
     // canvas.addEventListener('touchend', (evt) => {
     //     touchend(evt);
     // }, false)
 
     window.addEventListener('resize', function (e) {
         doResize();
-        clearCanvas();
     })
 
 
