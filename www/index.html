@@ -6,17 +6,23 @@
     <title>Canvas Pad</title>
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
     <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="cordova.js"></script>
-    <script src="jquery.min.js"></script>
     <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
-    <script src="main.js"></script>
+
+    <script src="cordova.js"></script>
+    <script src="./jquery.min.js"></script>
+
+    <script src="./main.js"></script>
 </head>
 
 <body>
     <canvas id="canvas" width="320" height="320"></canvas>
     <div id="ui-container">
-        <button type="button" class="btn btn-primary col-12" id="clear" onclick="clearCanvas()">CLEAR</button>
+        <button type="button" class="btn btn-danger col-12" id="clear" onclick="clearCanvas()">CLEAR</button>
         <button type="button" class="btn btn-success col-12" id="save" onclick="saveCanvas()">SAVE</button>
+        <button type="button" class="btn btn-success col-12" id="predict" onclick="predictCanvas()"
+            hidden>PREDICT</button>
+    </div>
+    <div id="alert-container">
     </div>
 </body>
 

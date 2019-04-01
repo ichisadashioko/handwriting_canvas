@@ -32,9 +32,33 @@ var mouse = {
     radius: MIN_RADIUS
 }
 
+var isBlank = true;
+
 var canvasOffset = {
     x: 0,
     y: 0,
+}
+
+function pushAlert(msg, type) {
+    console.log(`pushAlert: msg=${msg}, type=${type}`)
+
+    var alert_container = document.getElementById('alert-container')
+
+    var alert = document.createElement('div')
+
+    alert.classList.add('alert')
+    alert.classList.add(type)
+    alert.innerText = msg
+
+    alert_container.appendChild(alert)
+
+    setTimeout(function () {
+        alert.remove()
+    }, 1500)
+}
+
+function popAlert(e) {
+    e.remove()
 }
 
 function doResize() {
@@ -75,6 +99,7 @@ function doResize() {
 }
 
 function clearCanvas() {
+    isBlank = true;
     penDown = false;
     clearCounter = 0;
     lastClear = Date.now();
@@ -87,6 +112,9 @@ function clearCanvas() {
 }
 
 function saveCanvas() {
+
+    if (isBlank) return;
+
     penDown = false;
     saveCounter = 0;
     lastSave = Date.now();
@@ -95,45 +123,22 @@ function saveCanvas() {
 
     clearCanvas();
 
-    var pms = cordova.plugins.permissions;
+    cordova.exec(function (msg) {
+            console.log(msg)
+            pushAlert('save successsful', 'alert-info')
+        },
+        function (err) {
+            console.log(err)
+            pushAlert(err, 'alert-danger')
+        },
+        "Canvas2ImagePlugin",
+        "saveImageDataToLibrary",
+        [imageData]
+    )
+}
 
-    pms.checkPermission(pms.WRITE_EXTERNAL_STORAGE, function (status) {
-        if (status.hasPermission) {
-            // console.log("Yes")
+function predictCanvas() {
 
-            cordova.exec(function (msg) {
-                    console.log(msg)
-                },
-                function (err) {
-                    console.log(err)
-                },
-                "Canvas2ImagePlugin",
-                "saveImageDataToLibrary",
-                [imageData]
-            );
-        } else {
-            console.log("Saved failed. Lack permission: WRITE_EXTERNAL_STORAGE")
-            pms.requestPermissions(pms.WRITE_EXTERNAL_STORAGE, function (status) {
-                if (status.hasPermission) {
-                    console.log("Yes")
-
-                    cordova.exec(function (msg) {
-                            console.log(msg)
-                        },
-                        function (err) {
-                            console.log(err)
-                        },
-                        "Canvas2ImagePlugin",
-                        "saveImageDataToLibrary",
-                        [imageData]
-                    );
-                } else {
-                    console.log("Saved failed. Lack permission: WRITE_EXTERNAL_STORAGE")
-                }
-            })
-
-        }
-    })
 }
 
 function touchstart(evt) {
@@ -174,6 +179,8 @@ function touchmove(evt) {
     mouse.y = y;
     mouse.radius = r;
 
+    isBlank = false;
+
 }
 
 function touchend(evt) {
@@ -182,6 +189,7 @@ function touchend(evt) {
 
 
 window.onload = function () {
+
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
