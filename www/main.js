@@ -1,17 +1,34 @@
 const MIN_RADIUS = 4;
 const MAX_RADIUS = 5;
-const MIN_DISTANCE = 4; //MIN_RADIUS / 4.0;
-const MAX_DISTANCE = 96;
-
+const MIN_DISTANCE = 4;
+/**
+ * The canvas width and height.
+ * These canvas size is fixed so that when we rotate the phone,
+ * the canvas is only re-scale instead of re-create.
+ * Therefore, the canvas content will not be lost.
+ */
 const PAD_WIDTH = 320;
 const PAD_HEIGHT = 320;
 
+/**
+ * These variable is to prevent the canvas is saved accidentally
+ * multiple times.
+ */
 var lastClear = Date.now();
 var lastSave = Date.now();
 
+/**
+ * DEPERCATED
+ * These were used to handle multi-touches.
+ * However, that didn't work consistently.
+ */
 var clearCounter = 0;
 const CLEAR_TOUCHES_REQUIRE = 16;
 var clearTime = 300;
+/**
+ * DEPERCATED
+ * Swipe 3 fingers to clear.
+ */
 var CLEAR_GESTURE = 3;
 
 var saveCounter = 0;
@@ -32,8 +49,15 @@ var mouse = {
     radius: MIN_RADIUS
 }
 
+/**
+ * This variable is used to prevent from accidentally hit the save button
+ * and save a blank image.
+ */
 var isBlank = true;
 
+/**
+ * The offset is required to sync touch position with the canvas position.
+ */
 var canvasOffset = {
     x: 0,
     y: 0,
@@ -52,6 +76,9 @@ function pushAlert(msg, type) {
 
     alert_container.appendChild(alert)
 
+    /**
+     * automatically dimiss
+     */
     setTimeout(function () {
         alert.remove()
     }, 1500)
@@ -61,10 +88,13 @@ function popAlert(e) {
     e.remove()
 }
 
+/**
+ * Re-scale the canvas and UI component to fit the screen.
+ */
 function doResize() {
 
     var c = $('#canvas')
-
+    // Calculate new scale ratio.
     var new_scale = Math.min(
         window.innerWidth / PAD_WIDTH,
         window.innerHeight / PAD_HEIGHT
@@ -78,6 +108,7 @@ function doResize() {
 
     var ui_container = $('#ui-container')
 
+    // the ui (clear and save button) width is the remaining space
     var ui_width = window.innerWidth - new_scale * PAD_WIDTH;
 
     if (ui_width == 0) {
@@ -93,7 +124,7 @@ function doResize() {
         ui_container.css('left', '0')
         ui_container.css('right', '')
     }
-
+    // set the new width and height for the ui buttons container
     ui_container.css('width', ('' + ui_width + 'px'))
     ui_container.css('height', ('' + ui_height + 'px'))
 }
@@ -119,10 +150,12 @@ function saveCanvas() {
     saveCounter = 0;
     lastSave = Date.now();
 
+    // convert the canvas to base64 string
     var imageData = canvas.toDataURL().replace(/data:image\/png;base64,/, '');
 
     clearCanvas();
 
+    // execute a function from the native platform
     cordova.exec(function (msg) {
             console.log(msg)
             pushAlert('save successsful', 'alert-info')
@@ -131,21 +164,19 @@ function saveCanvas() {
             console.log(err)
             pushAlert(err, 'alert-danger')
         },
-        "Canvas2ImagePlugin",
-        "saveImageDataToLibrary",
-        [imageData]
+        "Canvas2ImagePlugin", // in Android this is the name of the java class/file
+        "saveImageDataToLibrary", // in Android this the name of the function
+        [imageData] // the arguments for the function
     )
-}
-
-function predictCanvas() {
-
 }
 
 function touchstart(evt) {
     penDown = true;
+    /**
+     * Rescale the touch position to sync with the canvas size
+     */
     mouse.x = (evt.x - canvasOffset.x) / scale;
     mouse.y = (evt.y - canvasOffset.y) / scale;
-
 }
 
 function touchmove(evt) {
@@ -156,6 +187,9 @@ function touchmove(evt) {
     var y = mouse.y;
     var r = mouse.radius;
 
+    /**
+     * Rescale the touch position to sync with the canvas size
+     */
     var dX = (evt.x - canvasOffset.x) / scale - x;
     var dY = (evt.y - canvasOffset.y) / scale - y;
 
