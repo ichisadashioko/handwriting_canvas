@@ -34,10 +34,10 @@ cordova create [folder-name] [com.example.cordova] [app-name]
 
 - Add `cordova-plugin`
 
-    - [`Canvas2ImagePlugin`](https://github.com/kuroemon2509/Canvas2ImagePlugin):
+    - [`Canvas2ImagePlugin`](https://github.com/ichisadashioko/Canvas2ImagePlugin):
 
         ```bash
-        cordova plugin add https://github.com/kuroemon2509/Canvas2ImagePlugin.git
+        cordova plugin add https://github.com/ichisadashioko/Canvas2ImagePlugin.git
         ```
 
 - `build` or `run` it in your devices
@@ -50,6 +50,6 @@ cordova create [folder-name] [com.example.cordova] [app-name]
 
 - On `android` device, images will be saved at `/root/sdcard/Pictures/cordova_app/`.
 
-- [Pre-build apk](https://github.com/kuroemon2509/handwriting_canvas/releases) is availabled at releases.
+- [Pre-build apk](https://github.com/ichisadashioko/handwriting_canvas/releases) is availabled at releases.
 
 - If your purpose is to run Tensorflow model inference via `tensorflow.js`, it's *not* possible because `tensorflow.js` use `Web Worker API` to pull its assets from the server the web page is running. However, cordova application is just offline `html-viewer` with offline `javascript`.
